@@ -117,3 +117,4 @@ pnpm run lint:api
 6. 为接口添加 `apps/api/tests` 测试，并把决策记录在 `.trellis/`。
 
 生产环境请补充 Alembic 数据库迁移、正式 JWT/OAuth 登录、对象存储、日志、监控和限流配置。
+# smart_elderly_care
