@@ -1,0 +1,13 @@
+# Project-level Trellis settings for this monorepo.
+session_commit_message: "chore: record trellis journal"
+max_journal_lines: 2000
+packages:
+  miniapp:
+    path: apps/miniapp
+  api:
+    path: apps/api
+  api-contract:
+    path: packages/api-contract
+default_package: miniapp
+codex:
+  dispatch_mode: auto

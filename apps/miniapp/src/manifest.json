@@ -1,0 +1,31 @@
+{
+  "name": "MiniApp Starter",
+  "appid": "__UNI__MINIAPP_STARTER",
+  "description": "UniApp multi-platform starter",
+  "versionName": "0.1.0",
+  "versionCode": 1,
+  "transformPx": false,
+  "h5": {
+    "router": {
+      "mode": "hash"
+    }
+  },
+  "app-plus": {
+    "usingComponents": true,
+    "nvueStyleCompiler": "uni-app",
+    "compilerVersion": 3,
+    "splashscreen": {
+      "alwaysShowBeforeRender": true,
+      "waiting": true,
+      "autoclose": true,
+      "delay": 0
+    }
+  },
+  "mp-weixin": {
+    "appid": "wx-your-app-id",
+    "setting": {
+      "urlCheck": false
+    },
+    "usingComponents": true
+  }
+}

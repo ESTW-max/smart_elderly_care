@@ -1,0 +1,21 @@
+{
+  "name": "miniapp-python-fullstack",
+  "version": "0.1.0",
+  "private": true,
+  "description": "UniApp multi-platform client and FastAPI backend managed as a Trellis-ready monorepo.",
+  "packageManager": "pnpm@10.15.0",
+  "scripts": {
+    "dev:miniapp": "pnpm --filter @miniapp/miniapp dev:h5",
+    "dev:weixin": "pnpm --filter @miniapp/miniapp dev:mp-weixin",
+    "build:h5": "pnpm --filter @miniapp/miniapp build:h5",
+    "build:weixin": "pnpm --filter @miniapp/miniapp build:mp-weixin",
+    "build:app": "pnpm --filter @miniapp/miniapp build:app",
+    "dev:api": "cd apps/api && uv --cache-dir .uv-cache run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "test:api": "cd apps/api && uv --cache-dir .uv-cache run --frozen pytest",
+    "lint:api": "cd apps/api && uv --cache-dir .uv-cache run --frozen ruff check .",
+    "format:api": "cd apps/api && uv --cache-dir .uv-cache run --frozen ruff format .",
+    "check:api": "cd apps/api && uv --cache-dir .uv-cache run --frozen python -m compileall -q app tests",
+    "check:miniapp": "pnpm --filter @miniapp/miniapp type-check",
+    "check": "pnpm run check:api && pnpm run check:miniapp"
+  }
+}

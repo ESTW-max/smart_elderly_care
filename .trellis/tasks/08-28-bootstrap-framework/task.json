@@ -1,0 +1,32 @@
+{
+  "id": "08-28-bootstrap-framework",
+  "name": "08-28-bootstrap-framework",
+  "title": "生成 UniApp + FastAPI 全栈框架",
+  "description": "创建同仓库的 UniApp 多平台客户端、FastAPI Python 服务、共享 OpenAPI 契约和 Trellis 文档。",
+  "status": "in_progress",
+  "dev_type": "feature",
+  "scope": "repository",
+  "package": null,
+  "priority": "P1",
+  "creator": "renbaiquan",
+  "assignee": "renbaiquan",
+  "createdAt": "2026-08-28",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": null,
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    "apps/miniapp",
+    "apps/api",
+    "packages/api-contract",
+    "docs",
+    ".trellis/spec"
+  ],
+  "notes": "CLI 构建和自动化检查完成后仍需用户用微信开发者工具及 HBuilderX/证书完成真机与签名验证。",
+  "meta": {}
+}

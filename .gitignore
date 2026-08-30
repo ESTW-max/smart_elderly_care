@@ -1,0 +1,35 @@
+# Node / UniApp
+node_modules/
+dist/
+unpackage/
+.pnpm-store/
+.vite/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.uv-cache/
+.npm-cache/
+
+# Local configuration and runtime data
+.env
+.env.*
+!.env.example
+apps/api/data/*.db
+apps/api/data/*.sqlite*
+!apps/api/data/.gitkeep
+*.log
+
+# IDE and OS files
+.idea/
+.vscode/settings.json
+.DS_Store
+
+# Build artifacts
+*.apk
+*.aab
+*.ipa

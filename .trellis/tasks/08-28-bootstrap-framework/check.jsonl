@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/miniapp/frontend/quality-guidelines.md", "reason": "Frontend quality and build gate"}
+{"file": ".trellis/spec/api/backend/fastapi.md", "reason": "Backend executable contracts and tests"}
+{"file": ".trellis/spec/api-contract/shared/index.md", "reason": "Contract parity verification"}
