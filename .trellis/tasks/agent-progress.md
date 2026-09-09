@@ -1,6 +1,6 @@
 # Agent 能力蒸馏进度
 
-更新时间：2026-08-30
+更新时间：2026-09-09
 
 ## 总览
 
@@ -40,10 +40,15 @@
 
 ## 验证
 
-- 后端测试：`47 passed`。
-- Ruff：通过。
+- 后端测试：`50 passed`（2026-09-09 实测）。
+- Ruff：`15 errors`。自动修复已应用 24 项；剩余需人工决策：
+  - `UP042` ×7：`class X(str, Enum)` 改 `StrEnum` 会改变 `str()` 输出，而这些枚举正在被 SQLite 持久化和 API 序列化，暂不改。
+  - `E501` ×5：仅换行，无风险。
+  - `B905` ×1：`tools/executor.py` 的 `zip()` 需先确认两序列长度恒等再加 `strict=`。
 - 测试仍有既有的 `datetime.utcnow()` 和 Starlette/httpx 弃用警告，不影响通过结果。
 - 真实 DeepSeek Agent 已成功执行 `pwd` 工具调用并返回最终回答。
+- 持久 Shell、审批、审计、凭据过滤相关测试均通过，此前记录的持久 Shell 回归已消除。
+- 孤立 `tool` 消息（无配对 `assistant.tool_calls`）当前行为是**保留并计入预算**，`_interaction_units` 的 docstring 仍写 "discarded"，与代码不符，待订正。
 
 ## 未完成
 
@@ -80,7 +85,7 @@
 
 ## 下一步顺序
 
-1. 重新执行完整测试并修复持久 Shell 回归问题。
+1. 订正 `_interaction_units` docstring，使其与"保留孤立 tool 消息"的实际行为一致。
 2. 将审批记录绑定 `task_id`，完善暂停后恢复的精确关联。
 3. 增加 Agent API 认证和审批身份审计。
 4. 增加网络域名白名单与网络访问策略。
