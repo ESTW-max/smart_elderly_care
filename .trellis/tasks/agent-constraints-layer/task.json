@@ -1,0 +1,34 @@
+{
+  "id": "agent-constraints-layer",
+  "name": "agent-constraints-layer",
+  "title": "Agent Constraint Layer - Sandbox Authorization and Credentials",
+  "description": "Implement defense-in-depth controls for Agent execution: sandbox policy, authorization approval, network governance, and credential isolation",
+  "status": "in_progress",
+  "dev_type": "feature",
+  "scope": "backend",
+  "package": "api",
+  "priority": "P1",
+  "creator": "renbaiquan",
+  "assignee": "renbaiquan",
+  "createdAt": "2026-08-30",
+  "branch": "feature/agent-constraints-layer",
+  "base_branch": "main",
+  "subtasks": [
+    "sandbox-policy",
+    "command-authorization",
+    "network-governance",
+    "credential-isolation"
+  ],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    "apps/api/app/kernel/environment/",
+    "apps/api/app/kernel/tools/"
+  ],
+  "notes": "In progress: command/file policies, approvals, credential filtering, resource limits, audit, and persistent shell are complete. Remaining: OS sandbox, network governance, credential broker, tenant/auth controls. See ../agent-progress.md.",
+  "meta": {
+    "reference_doc": "agent-core-capabilities.md",
+    "architecture_principles": ["Least Privilege", "Fail Closed", "Defense in Depth"],
+    "dependencies": ["agent-skeleton-migration"]
+  }
+}

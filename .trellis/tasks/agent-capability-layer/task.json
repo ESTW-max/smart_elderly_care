@@ -1,0 +1,39 @@
+{
+  "id": "agent-capability-layer",
+  "name": "agent-capability-layer",
+  "title": "Agent Capability Layer - Context Persistence and Delegation",
+  "description": "Implement context management, durable state persistence, resumable execution, and multi-agent delegation after the skeleton layer hardening",
+  "status": "in_progress",
+  "dev_type": "feature",
+  "scope": "backend",
+  "package": "api",
+  "priority": "P1",
+  "creator": "renbaiquan",
+  "assignee": "renbaiquan",
+  "createdAt": "2026-08-30",
+  "completedAt": null,
+  "branch": "feature/agent-capability-layer",
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [
+    "context-management",
+    "state-persistence",
+    "task-resume-and-fork",
+    "multi-agent-delegation"
+  ],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    "apps/api/app/kernel/",
+    "apps/api/app/models/",
+    "apps/api/app/db/"
+  ],
+  "notes": "In progress: context budgets, JSON task snapshots, task query, and resume are complete. Remaining: SQLAlchemy normalized state, task fork, durable events, accurate tokenizer/summary, and multi-agent delegation. See ../agent-progress.md.",
+  "meta": {
+    "reference_doc": "agent-core-capabilities.md",
+    "architecture_principles": ["SOLID", "Clean Architecture", "Dependency Inversion"],
+    "dependencies": ["agent-skeleton-migration"]
+  }
+}

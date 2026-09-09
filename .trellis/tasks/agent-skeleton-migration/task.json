@@ -1,0 +1,40 @@
+{
+  "id": "agent-skeleton-migration",
+  "name": "agent-skeleton-migration",
+  "title": "Agent Skeleton Layer Migration - Core Orchestration Framework",
+  "description": "Migrate agent skeleton layer capabilities (orchestration loop, tool invocation, execution environment) from codex to backend/kernel following SOLID principles",
+  "status": "completed",
+  "dev_type": "feature",
+  "scope": "backend",
+  "package": "api",
+  "priority": "P0",
+  "creator": "renbaiquan",
+  "assignee": "renbaiquan",
+  "createdAt": "2026-08-30",
+  "completedAt": "2026-08-30",
+  "branch": "feature/agent-skeleton-migration",
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [
+    "orchestration-loop",
+    "tool-invocation-system",
+    "execution-environment",
+    "deepseek-model-provider",
+    "env-driven-configuration",
+    "integration-tests"
+  ],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    "apps/api/app/kernel/",
+    "apps/api/pyproject.toml"
+  ],
+  "notes": "Completed: orchestration, tool invocation, local execution environment, DeepSeek integration, env configuration, security policies, persistence, context budgets, approvals, audit, and persistent shell. See agent-progress.md for current scope and remaining work.",
+  "meta": {
+    "reference_doc": "agent-core-capabilities.md",
+    "architecture_principles": ["SOLID", "Clean Architecture", "Dependency Inversion"],
+    "target_location": "apps/api/app/kernel/"
+  }
+}

@@ -38,6 +38,27 @@ NULL` defaulting false, and timezone-aware `created_at NOT NULL`.
 | `DATABASE_URL` | no | local async SQLite URL |
 | `CORS_ORIGINS` | no | comma-separated local H5 origins |
 | `JWT_SECRET` | production | local placeholder must be replaced |
+| `DEEPSEEK_API_KEY` | when Agent is enabled | secret; never commit |
+| `DEEPSEEK_MODEL` | no | `deepseek-chat` |
+| `DEEPSEEK_BASE_URL` | no | official DeepSeek API URL |
+| `DEEPSEEK_TEMPERATURE` | no | `0.2` |
+| `DEEPSEEK_MAX_OUTPUT_TOKENS` | no | `4096` |
+| `DEEPSEEK_TIMEOUT_SECONDS` | no | `60` |
+| `DEEPSEEK_MAX_RETRIES` | no | `2`; only network/timeout errors retry |
+| `AGENT_SYSTEM_PROMPT` | no | coding-agent prompt |
+| `AGENT_WORKSPACE` | no | `.`; restrict test Agent filesystem scope |
+| `AGENT_TEST_ENDPOINT_ENABLED` | no | `false`; must be explicitly enabled |
+| `AGENT_MAX_STEPS` | no | `100` |
+| `AGENT_MAX_TOKENS` | no | `100000` |
+| `AGENT_MAX_SECONDS` | no | `3600` |
+| `AGENT_ALLOWED_COMMANDS` | no | comma-separated command allow-list |
+| `AGENT_FILE_READ_ENABLED` | no | `true` |
+| `AGENT_FILE_WRITE_ENABLED` | no | `false`; least privilege default |
+
+All new runtime and deployment configuration must be declared in `Settings`,
+documented in `.env.example`, and supplied through environment variables. Do
+not hard-code environment-specific values or secrets in routes, services, or
+the agent kernel.
 
 - Keep `create_app()` as the application factory so tests inject isolated
   settings and databases.

@@ -53,7 +53,69 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HTTPValidationError"
-  /items/{item_id}:
+  /agent/approvals:
+    get:
+      operationId: listAgentApprovals
+      summary: List pending Agent approvals
+      responses:
+        "200":
+          description: Pending approvals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AgentApprovalRead"
+  /agent/approvals/{approval_id}/decision:
+    post:
+      operationId: decideAgentApproval
+      summary: Approve or deny an Agent action
+      parameters:
+        - name: approval_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentApprovalDecision"
+      responses:
+        "200":
+          description: Decision recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentApprovalRead"
+        "404":
+          description: Pending approval not found
+  /agent/test:
+    post:
+      operationId: testAgent
+      summary: Run a one-off Agent capability test
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentTestRequest"
+      responses:
+        "200":
+          description: Agent execution summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentTestResponse"
+        "404":
+          description: Agent test endpoint is disabled
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HTTPValidationError"
     parameters:
       - name: item_id
         in: path
@@ -109,7 +171,99 @@ paths:
                 $ref: "#/components/schemas/HTTPValidationError"
 components:
   schemas:
-    ErrorDetail:
+    AgentApprovalDecision:
+      type: object
+      additionalProperties: false
+      required: [approved]
+      properties:
+        approved:
+          type: boolean
+    AgentApprovalRead:
+      type: object
+      required: [id, tool_name, arguments, status, created_at]
+      properties:
+        id:
+          type: string
+        tool_name:
+          type: string
+        arguments:
+          type: object
+        status:
+          type: string
+        created_at:
+          type: string
+        decided_at:
+          anyOf:
+            - type: string
+            - type: "null"
+    AgentTestRequest:
+      type: object
+      additionalProperties: false
+      required: [goal]
+      properties:
+        goal:
+          type: string
+          minLength: 1
+          description: 自然语言任务目标
+    AgentToolObservation:
+      type: object
+      required: [call_id, success, result, error]
+      properties:
+        call_id:
+          type: string
+        success:
+          type: boolean
+        result: {}
+        error:
+          anyOf:
+            - type: string
+            - type: "null"
+    AgentStepRead:
+      type: object
+      required: [id, tool_calls, observations, content, tokens_used]
+      properties:
+        id:
+          type: string
+        tool_calls:
+          type: array
+          items:
+            type: string
+        observations:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentToolObservation"
+        content:
+          type: string
+        tokens_used:
+          type: integer
+    AgentTurnRead:
+      type: object
+      required: [id, steps]
+      properties:
+        id:
+          type: string
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentStepRead"
+    AgentTestResponse:
+      type: object
+      required: [task_id, status, goal, model, turns, total_tokens]
+      properties:
+        task_id:
+          type: string
+        status:
+          type: string
+        goal:
+          type: string
+        model:
+          type: string
+        turns:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentTurnRead"
+        total_tokens:
+          type: integer
       type: object
       required: [detail]
       properties:
