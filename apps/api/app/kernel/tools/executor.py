@@ -137,7 +137,10 @@ class ToolExecutor(IToolExecutor):
                 return ToolResult(
                     success=False,
                     output=None,
-                    error=f"Tool '{tool_name}' requires approval, but no approval service is configured",
+                    error=(
+                        f"Tool '{tool_name}' requires approval, "
+                        "but no approval service is configured"
+                    ),
                     metadata={"approval_required": True},
                 )
             if not await self._approval.approve(tool, arguments, task_id=task_id):

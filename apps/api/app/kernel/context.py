@@ -111,8 +111,14 @@ class ContextManager:
     ) -> tuple[list[list[dict[str, Any]]], bool]:
         """Group assistant tool calls with their following tool results.
 
-        Tool results without a matching assistant call are discarded rather
-        than emitted as orphan messages, since providers reject that shape.
+        Tool results without a matching assistant call are kept as their own
+        unit, so their output is still truncated and charged against the tool
+        budget rather than silently dropped. They set the returned orphan flag,
+        which makes ``build`` report the history as compacted.
+
+        Note: OpenAI-compatible providers reject a ``tool`` message that has no
+        preceding ``assistant.tool_calls`` entry, so a caller that replays this
+        history straight to a provider is expected to sanitize it first.
         """
         units: list[list[dict[str, Any]]] = []
         had_orphans = False

@@ -696,7 +696,9 @@ async def test_environment_filters_provider_credentials(environment, monkeypatch
     monkeypatch.setenv("DEEPSEEK_API_KEY", "must-not-leak")
     await environment.start()
 
-    result = await environment.exec("python -c 'print(__import__(\"os\").getenv(\"DEEPSEEK_API_KEY\", \"missing\"))'")
+    result = await environment.exec(
+        "python -c 'print(__import__(\"os\").getenv(\"DEEPSEEK_API_KEY\", \"missing\"))'"
+    )
 
     assert result.exit_code == 0
     assert "missing" in result.stdout
@@ -747,6 +749,8 @@ async def test_environment_shell_cd_and_env_persist(tmp_path):
     assert (await environment.exec("cd subdir")).exit_code == 0
     assert (await environment.exec("pwd")).stdout.strip() == str(tmp_path / "subdir")
     assert (await environment.exec("export AGENT_TEST_VALUE=ok")).exit_code == 0
-    result = await environment.exec("python -c 'print(__import__(\"os\").getenv(\"AGENT_TEST_VALUE\"))'")
+    result = await environment.exec(
+        "python -c 'print(__import__(\"os\").getenv(\"AGENT_TEST_VALUE\"))'"
+    )
     assert result.stdout.strip() == "ok"
     await environment.stop()

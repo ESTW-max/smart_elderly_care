@@ -85,7 +85,10 @@ def _redact(value: Any) -> Any:
     if isinstance(value, dict):
         return {
             key: "[REDACTED]"
-            if any(secret in key.lower() for secret in ("key", "token", "secret", "password", "credential"))
+            if any(
+                secret in key.lower()
+                for secret in ("key", "token", "secret", "password", "credential")
+            )
             else _redact(item)
             for key, item in value.items()
         }

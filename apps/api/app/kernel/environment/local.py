@@ -273,7 +273,9 @@ class LocalEnvironment(IExecutionEnvironment):
             raise ValueError(f"old_text not found in {patch.path}")
         if count > 1:
             raise ValueError(f"old_text appears {count} times in {patch.path}")
-        resolved.write_text(current.replace(patch.old_text, patch.new_text, 1), encoding=patch.encoding)
+        resolved.write_text(
+            current.replace(patch.old_text, patch.new_text, 1), encoding=patch.encoding
+        )
 
     async def list_dir(self, path: str) -> list[str]:
         resolved = self._resolve_path(path)
@@ -311,7 +313,9 @@ class LocalEnvironment(IExecutionEnvironment):
             return
         if self._max_cpu_seconds is not None:
             resource.setrlimit(resource.RLIMIT_CPU, (self._max_cpu_seconds, self._max_cpu_seconds))
-        resource.setrlimit(resource.RLIMIT_FSIZE, (self._max_file_size_bytes, self._max_file_size_bytes))
+        resource.setrlimit(
+            resource.RLIMIT_FSIZE, (self._max_file_size_bytes, self._max_file_size_bytes)
+        )
 
     @staticmethod
     def _terminate_process_group(proc: asyncio.subprocess.Process) -> None:

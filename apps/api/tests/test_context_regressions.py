@@ -25,7 +25,9 @@ def test_compaction_keeps_assistant_tool_call_and_matching_result_together():
     result, _ = manager.build(messages)
 
     assert result[-1]["content"] == "latest answer"
-    tool_positions = [index for index, message in enumerate(result) if message.get("role") == "tool"]
+    tool_positions = [
+        index for index, message in enumerate(result) if message.get("role") == "tool"
+    ]
     assistant_positions = [
         index
         for index, message in enumerate(result)
