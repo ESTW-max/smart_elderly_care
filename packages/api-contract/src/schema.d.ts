@@ -39,6 +39,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/agent/approvals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List pending Agent approvals */
+        get: operations["listAgentApprovals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/approvals/{approval_id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve or deny an Agent action */
+        post: operations["decideAgentApproval"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/tasks/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a persisted Agent task */
+        get: operations["getAgentTask"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/tasks/{task_id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resume a persisted Agent task */
+        post: operations["resumeAgentTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run a one-off Agent capability test */
+        post: operations["testAgent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/items/{item_id}": {
         parameters: {
             query?: never;
@@ -63,6 +148,49 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AgentApprovalDecision: {
+            approved: boolean;
+        };
+        AgentApprovalRead: {
+            id: string;
+            tool_name: string;
+            arguments: Record<string, never>;
+            status: string;
+            created_at: string;
+            decided_at?: string | null;
+            /** @description Actor name of the API token that recorded the decision */
+            decided_by?: string | null;
+        };
+        AgentTestRequest: {
+            /** @description 自然语言任务目标 */
+            goal: string;
+        };
+        AgentToolObservation: {
+            call_id: string;
+            success: boolean;
+            result: unknown;
+            error: string | null;
+        };
+        AgentStepRead: {
+            id: string;
+            tool_calls: string[];
+            observations: components["schemas"]["AgentToolObservation"][];
+            content: string;
+            tokens_used: number;
+        };
+        AgentTurnRead: {
+            id: string;
+            steps: components["schemas"]["AgentStepRead"][];
+        };
+        AgentTestResponse: {
+            task_id: string;
+            status: string;
+            goal: string;
+            model: string;
+            turns: components["schemas"]["AgentTurnRead"][];
+            total_tokens: number;
+            error?: string | null;
+        };
         ErrorDetail: {
             detail: string;
         };
@@ -94,7 +222,35 @@ export interface components {
             created_at: string;
         };
     };
-    responses: never;
+    responses: {
+        /** @description Missing or invalid X-Agent-Token */
+        AgentUnauthorized: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorDetail"];
+            };
+        };
+        /** @description Agent endpoints are disabled */
+        AgentDisabled: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorDetail"];
+            };
+        };
+        /** @description AGENT_API_TOKEN is not configured */
+        AgentUnavailable: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorDetail"];
+            };
+        };
+    };
     parameters: never;
     requestBodies: never;
     headers: never;
@@ -173,6 +329,171 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+        };
+    };
+    listAgentApprovals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pending approvals */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentApprovalRead"][];
+                };
+            };
+            401: components["responses"]["AgentUnauthorized"];
+            404: components["responses"]["AgentDisabled"];
+            503: components["responses"]["AgentUnavailable"];
+        };
+    };
+    decideAgentApproval: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                approval_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentApprovalDecision"];
+            };
+        };
+        responses: {
+            /** @description Decision recorded */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentApprovalRead"];
+                };
+            };
+            401: components["responses"]["AgentUnauthorized"];
+            /** @description Pending approval not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            503: components["responses"]["AgentUnavailable"];
+        };
+    };
+    getAgentTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Persisted task snapshot */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentTestResponse"];
+                };
+            };
+            401: components["responses"]["AgentUnauthorized"];
+            /** @description Agent task not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            503: components["responses"]["AgentUnavailable"];
+        };
+    };
+    resumeAgentTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Agent execution summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentTestResponse"];
+                };
+            };
+            401: components["responses"]["AgentUnauthorized"];
+            /** @description Agent task not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Task is not resumable */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorDetail"];
+                };
+            };
+            503: components["responses"]["AgentUnavailable"];
+        };
+    };
+    testAgent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentTestRequest"];
+            };
+        };
+        responses: {
+            /** @description Agent execution summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentTestResponse"];
+                };
+            };
+            401: components["responses"]["AgentUnauthorized"];
+            404: components["responses"]["AgentDisabled"];
+            /** @description Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            503: components["responses"]["AgentUnavailable"];
         };
     };
     updateItem: {

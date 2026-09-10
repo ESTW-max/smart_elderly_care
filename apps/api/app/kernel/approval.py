@@ -35,6 +35,7 @@ class ApprovalRequest:
     created_at: datetime
     decided_at: datetime | None = None
     task_id: str | None = None
+    decided_by: str | None = None
 
 
 class SQLiteApprovalStore(IToolApproval):
@@ -59,11 +60,12 @@ class SQLiteApprovalStore(IToolApproval):
                     arguments TEXT NOT NULL,
                     status TEXT NOT NULL,
                     created_at TEXT NOT NULL,
-                    decided_at TEXT
+                    decided_at TEXT,
+                    decided_by TEXT
                 )
                 """
             )
-            self._ensure_task_id_column(connection)
+            self._ensure_columns(connection)
             connection.execute(
                 "CREATE INDEX IF NOT EXISTS ix_agent_approvals_action "
                 "ON agent_approvals(task_id, action_hash, status)"
@@ -119,8 +121,8 @@ class SQLiteApprovalStore(IToolApproval):
         task_id: str | None = None,
     ) -> list[ApprovalRequest]:
         query = (
-            "SELECT id, tool_name, arguments, status, created_at, decided_at, task_id "
-            "FROM agent_approvals"
+            "SELECT id, tool_name, arguments, status, created_at, decided_at, "
+            "task_id, decided_by FROM agent_approvals"
         )
         clauses: list[str] = []
         parameters: list[str] = []
@@ -137,20 +139,31 @@ class SQLiteApprovalStore(IToolApproval):
             rows = connection.execute(query, tuple(parameters)).fetchall()
         return [_record(row) for row in rows]
 
-    def decide(self, approval_id: str, approved: bool) -> ApprovalRequest | None:
+    def decide(
+        self,
+        approval_id: str,
+        approved: bool,
+        decided_by: str | None = None,
+    ) -> ApprovalRequest | None:
         status = ApprovalStatus.APPROVED if approved else ApprovalStatus.DENIED
         decided_at = datetime.now(UTC).isoformat()
         with self._connect() as connection:
             cursor = connection.execute(
-                "UPDATE agent_approvals SET status = ?, decided_at = ? "
+                "UPDATE agent_approvals SET status = ?, decided_at = ?, decided_by = ? "
                 "WHERE id = ? AND status = ?",
-                (status.value, decided_at, approval_id, ApprovalStatus.PENDING.value),
+                (
+                    status.value,
+                    decided_at,
+                    decided_by,
+                    approval_id,
+                    ApprovalStatus.PENDING.value,
+                ),
             )
             if cursor.rowcount == 0:
                 return None
             row = connection.execute(
-                "SELECT id, tool_name, arguments, status, created_at, decided_at, task_id "
-                "FROM agent_approvals WHERE id = ?",
+                "SELECT id, tool_name, arguments, status, created_at, decided_at, "
+                "task_id, decided_by FROM agent_approvals WHERE id = ?",
                 (approval_id,),
             ).fetchone()
         return _record(row)
@@ -159,12 +172,14 @@ class SQLiteApprovalStore(IToolApproval):
         return sqlite3.connect(self._path)
 
     @staticmethod
-    def _ensure_task_id_column(connection: sqlite3.Connection) -> None:
+    def _ensure_columns(connection: sqlite3.Connection) -> None:
+        """Add columns introduced after a database was first created."""
         columns = {
             row[1] for row in connection.execute("PRAGMA table_info(agent_approvals)").fetchall()
         }
-        if "task_id" not in columns:
-            connection.execute("ALTER TABLE agent_approvals ADD COLUMN task_id TEXT")
+        for name in ("task_id", "decided_by"):
+            if name not in columns:
+                connection.execute(f"ALTER TABLE agent_approvals ADD COLUMN {name} TEXT")
 
 
 def _action_hash(tool_name: str, arguments: dict[str, Any]) -> str:
@@ -177,7 +192,9 @@ def _action_hash(tool_name: str, arguments: dict[str, Any]) -> str:
     return hashlib.sha256(canonical.encode()).hexdigest()
 
 
-def _record(row: tuple[str, str, str, str, str, str | None, str | None]) -> ApprovalRequest:
+def _record(
+    row: tuple[str, str, str, str, str, str | None, str | None, str | None],
+) -> ApprovalRequest:
     return ApprovalRequest(
         id=row[0],
         tool_name=row[1],
@@ -186,4 +203,5 @@ def _record(row: tuple[str, str, str, str, str, str | None, str | None]) -> Appr
         created_at=datetime.fromisoformat(row[4]),
         decided_at=datetime.fromisoformat(row[5]) if row[5] else None,
         task_id=row[6],
+        decided_by=row[7],
     )

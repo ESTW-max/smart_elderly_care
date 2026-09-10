@@ -57,6 +57,8 @@ paths:
     get:
       operationId: listAgentApprovals
       summary: List pending Agent approvals
+      security:
+        - AgentToken: []
       responses:
         "200":
           description: Pending approvals
@@ -66,10 +68,18 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/AgentApprovalRead"
+        "401":
+          $ref: "#/components/responses/AgentUnauthorized"
+        "404":
+          $ref: "#/components/responses/AgentDisabled"
+        "503":
+          $ref: "#/components/responses/AgentUnavailable"
   /agent/approvals/{approval_id}/decision:
     post:
       operationId: decideAgentApproval
       summary: Approve or deny an Agent action
+      security:
+        - AgentToken: []
       parameters:
         - name: approval_id
           in: path
@@ -89,12 +99,74 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AgentApprovalRead"
+        "401":
+          $ref: "#/components/responses/AgentUnauthorized"
         "404":
           description: Pending approval not found
+        "503":
+          $ref: "#/components/responses/AgentUnavailable"
+  /agent/tasks/{task_id}:
+    get:
+      operationId: getAgentTask
+      summary: Get a persisted Agent task
+      security:
+        - AgentToken: []
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Persisted task snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentTestResponse"
+        "401":
+          $ref: "#/components/responses/AgentUnauthorized"
+        "404":
+          description: Agent task not found
+        "503":
+          $ref: "#/components/responses/AgentUnavailable"
+  /agent/tasks/{task_id}/resume:
+    post:
+      operationId: resumeAgentTask
+      summary: Resume a persisted Agent task
+      security:
+        - AgentToken: []
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Agent execution summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentTestResponse"
+        "401":
+          $ref: "#/components/responses/AgentUnauthorized"
+        "404":
+          description: Agent task not found
+        "409":
+          description: Task is not resumable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorDetail"
+        "503":
+          $ref: "#/components/responses/AgentUnavailable"
   /agent/test:
     post:
       operationId: testAgent
       summary: Run a one-off Agent capability test
+      security:
+        - AgentToken: []
       requestBody:
         required: true
         content:
@@ -108,14 +180,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AgentTestResponse"
+        "401":
+          $ref: "#/components/responses/AgentUnauthorized"
         "404":
-          description: Agent test endpoint is disabled
+          $ref: "#/components/responses/AgentDisabled"
         "422":
           description: Validation error
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/HTTPValidationError"
+        "503":
+          $ref: "#/components/responses/AgentUnavailable"
+  /items/{item_id}:
     parameters:
       - name: item_id
         in: path
@@ -170,6 +247,35 @@ paths:
               schema:
                 $ref: "#/components/schemas/HTTPValidationError"
 components:
+  securitySchemes:
+    AgentToken:
+      type: apiKey
+      in: header
+      name: X-Agent-Token
+      description: >
+        Shared secret from AGENT_API_TOKEN, formatted as name:token pairs.
+        The matched name is recorded as the actor on approvals and audit
+        events. Every /agent/* endpoint requires it; the API returns 503
+        while no token is configured rather than serving unauthenticated.
+  responses:
+    AgentUnauthorized:
+      description: Missing or invalid X-Agent-Token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorDetail"
+    AgentDisabled:
+      description: Agent endpoints are disabled
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorDetail"
+    AgentUnavailable:
+      description: AGENT_API_TOKEN is not configured
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorDetail"
   schemas:
     AgentApprovalDecision:
       type: object
@@ -196,6 +302,11 @@ components:
           anyOf:
             - type: string
             - type: "null"
+        decided_by:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Actor name of the API token that recorded the decision
     AgentTestRequest:
       type: object
       additionalProperties: false
@@ -264,6 +375,11 @@ components:
             $ref: "#/components/schemas/AgentTurnRead"
         total_tokens:
           type: integer
+        error:
+          anyOf:
+            - type: string
+            - type: "null"
+    ErrorDetail:
       type: object
       required: [detail]
       properties:

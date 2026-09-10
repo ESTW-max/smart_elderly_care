@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.core.config import Settings
-from app.kernel.approval import ApprovalStatus, SQLiteApprovalStore
+from app.api.dependencies import AgentAuth, require_agent_auth
+from app.kernel.approval import ApprovalRequest, ApprovalStatus, SQLiteApprovalStore
+from app.kernel.audit import SQLiteAuditStore
 from app.kernel.factory import create_deepseek_agent
 from app.kernel.interfaces.loop import AgentTask
 from app.kernel.persistence import SQLiteTaskStore
@@ -62,12 +63,17 @@ def _to_response(task: AgentTask, model: str) -> AgentTestResponse:
     )
 
 
-def _require_enabled(request: Request) -> Settings:
-    """Return settings when the opt-in Agent endpoint is enabled."""
-    settings: Settings = request.app.state.settings
-    if not settings.agent_test_endpoint_enabled:
-        raise HTTPException(status_code=404, detail="Agent test endpoint is disabled")
-    return settings
+def _to_approval_read(record: ApprovalRequest) -> AgentApprovalRead:
+    """Convert an approval record into its public representation."""
+    return AgentApprovalRead(
+        id=record.id,
+        tool_name=record.tool_name,
+        arguments=record.arguments,
+        status=record.status.value,
+        created_at=record.created_at.isoformat(),
+        decided_at=record.decided_at.isoformat() if record.decided_at else None,
+        decided_by=record.decided_by,
+    )
 
 
 @router.get(
@@ -76,23 +82,14 @@ def _require_enabled(request: Request) -> Settings:
     operation_id="listAgentApprovals",
     summary="List pending Agent approvals",
 )
-async def list_agent_approvals(request: Request) -> list[AgentApprovalRead]:
+async def list_agent_approvals(
+    auth: AgentAuth = Depends(require_agent_auth),
+) -> list[AgentApprovalRead]:
     """List approval requests for exact high-risk actions."""
-    settings = _require_enabled(request)
-    records = SQLiteApprovalStore(settings.agent_state_database_path).list(
+    records = SQLiteApprovalStore(auth.settings.agent_state_database_path).list(
         ApprovalStatus.PENDING
     )
-    return [
-        AgentApprovalRead(
-            id=record.id,
-            tool_name=record.tool_name,
-            arguments=record.arguments,
-            status=record.status.value,
-            created_at=record.created_at.isoformat(),
-            decided_at=record.decided_at.isoformat() if record.decided_at else None,
-        )
-        for record in records
-    ]
+    return [_to_approval_read(record) for record in records]
 
 
 @router.post(
@@ -104,23 +101,22 @@ async def list_agent_approvals(request: Request) -> list[AgentApprovalRead]:
 async def decide_agent_approval(
     approval_id: str,
     payload: AgentApprovalDecision,
-    request: Request,
+    auth: AgentAuth = Depends(require_agent_auth),
 ) -> AgentApprovalRead:
     """Record a user decision for one exact pending tool action."""
-    settings = _require_enabled(request)
-    record = SQLiteApprovalStore(settings.agent_state_database_path).decide(
-        approval_id, payload.approved
+    record = SQLiteApprovalStore(auth.settings.agent_state_database_path).decide(
+        approval_id, payload.approved, decided_by=auth.actor
     )
     if record is None:
         raise HTTPException(status_code=404, detail="Pending approval not found")
-    return AgentApprovalRead(
-        id=record.id,
+    SQLiteAuditStore(auth.settings.agent_state_database_path).record(
+        "agent_approval_decided",
+        task_id=record.task_id,
         tool_name=record.tool_name,
-        arguments=record.arguments,
-        status=record.status.value,
-        created_at=record.created_at.isoformat(),
-        decided_at=record.decided_at.isoformat() if record.decided_at else None,
+        decision="allow" if payload.approved else "deny",
+        details={"approval_id": approval_id, "actor": auth.actor},
     )
+    return _to_approval_read(record)
 
 
 @router.get(
@@ -129,13 +125,15 @@ async def decide_agent_approval(
     operation_id="getAgentTask",
     summary="Get a persisted Agent task",
 )
-async def get_agent_task(task_id: str, request: Request) -> AgentTestResponse:
+async def get_agent_task(
+    task_id: str,
+    auth: AgentAuth = Depends(require_agent_auth),
+) -> AgentTestResponse:
     """Read the latest persisted snapshot without calling the model."""
-    settings = _require_enabled(request)
-    task = SQLiteTaskStore(settings.agent_state_database_path).get(task_id)
+    task = SQLiteTaskStore(auth.settings.agent_state_database_path).get(task_id)
     if task is None:
         raise HTTPException(status_code=404, detail="Agent task not found")
-    return _to_response(task, settings.deepseek_model)
+    return _to_response(task, auth.settings.deepseek_model)
 
 
 @router.post(
@@ -144,9 +142,12 @@ async def get_agent_task(task_id: str, request: Request) -> AgentTestResponse:
     operation_id="resumeAgentTask",
     summary="Resume a persisted Agent task",
 )
-async def resume_agent_task(task_id: str, request: Request) -> AgentTestResponse:
+async def resume_agent_task(
+    task_id: str,
+    auth: AgentAuth = Depends(require_agent_auth),
+) -> AgentTestResponse:
     """Resume a paused or failed task from the latest persisted snapshot."""
-    settings = _require_enabled(request)
+    settings = auth.settings
     try:
         orchestrator, environment = create_deepseek_agent(
             settings,
@@ -171,9 +172,12 @@ async def resume_agent_task(task_id: str, request: Request) -> AgentTestResponse
     operation_id="testAgent",
     summary="Run a one-off Agent capability test",
 )
-async def test_agent(payload: AgentTestRequest, request: Request) -> AgentTestResponse:
+async def test_agent(
+    payload: AgentTestRequest,
+    auth: AgentAuth = Depends(require_agent_auth),
+) -> AgentTestResponse:
     """Run a natural-language goal with the configured DeepSeek Agent."""
-    settings = _require_enabled(request)
+    settings = auth.settings
     try:
         orchestrator, environment = create_deepseek_agent(
             settings,

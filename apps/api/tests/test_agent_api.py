@@ -28,9 +28,13 @@ def _settings(tmp_path, *, enabled: bool) -> Settings:
         deepseek_api_key="test-key",
         deepseek_model="deepseek-chat",
         agent_test_endpoint_enabled=enabled,
+        agent_api_token="tester:test-token",
         agent_workspace=str(tmp_path),
         agent_state_database_path=str(tmp_path / "agent-state.db"),
     )
+
+
+AUTH = {"X-Agent-Token": "test-token"}
 
 
 def _completed_task(goal: str) -> AgentTask:
@@ -61,7 +65,9 @@ def _completed_task(goal: str) -> AgentTask:
 
 def test_agent_endpoint_is_disabled_by_default(tmp_path) -> None:
     with TestClient(create_app(_settings(tmp_path, enabled=False))) as client:
-        response = client.post("/api/v1/agent/test", json={"goal": "读取 README"})
+        response = client.post(
+            "/api/v1/agent/test", json={"goal": "读取 README"}, headers=AUTH
+        )
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Agent test endpoint is disabled"
@@ -69,7 +75,7 @@ def test_agent_endpoint_is_disabled_by_default(tmp_path) -> None:
 
 def test_agent_endpoint_validates_request(tmp_path) -> None:
     with TestClient(create_app(_settings(tmp_path, enabled=True))) as client:
-        response = client.post("/api/v1/agent/test", json={"goal": ""})
+        response = client.post("/api/v1/agent/test", json={"goal": ""}, headers=AUTH)
 
     assert response.status_code == 422
 
@@ -85,7 +91,9 @@ def test_agent_endpoint_returns_execution_summary(tmp_path) -> None:
         return_value=(orchestrator, environment),
     ):
         with TestClient(create_app(_settings(tmp_path, enabled=True))) as client:
-            response = client.post("/api/v1/agent/test", json={"goal": goal})
+            response = client.post(
+                "/api/v1/agent/test", json={"goal": goal}, headers=AUTH
+            )
 
     assert response.status_code == 200
     body = response.json()
@@ -108,7 +116,7 @@ def test_get_persisted_agent_task(tmp_path):
     store.save(task)
 
     with TestClient(create_app(settings)) as client:
-        response = client.get(f"/api/v1/agent/tasks/{task.id}")
+        response = client.get(f"/api/v1/agent/tasks/{task.id}", headers=AUTH)
 
     assert response.status_code == 200
     assert response.json()["goal"] == "已保存任务"
@@ -135,13 +143,15 @@ def test_list_and_decide_agent_approval(tmp_path):
     assert len(pending) == 1
 
     with TestClient(create_app(settings)) as client:
-        listed = client.get("/api/v1/agent/approvals")
+        listed = client.get("/api/v1/agent/approvals", headers=AUTH)
         assert listed.status_code == 200
         assert listed.json()[0]["tool_name"] == "shell_exec"
 
         decision = client.post(
             f"/api/v1/agent/approvals/{pending[0].id}/decision",
             json={"approved": True},
+            headers=AUTH,
         )
         assert decision.status_code == 200
         assert decision.json()["status"] == "approved"
+        assert decision.json()["decided_by"] == "tester"

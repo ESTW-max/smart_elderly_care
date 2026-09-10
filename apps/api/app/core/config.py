@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     agent_system_prompt: str = "You are a helpful coding agent."
     agent_workspace: str = "."
     agent_test_endpoint_enabled: bool = False
+    agent_api_token: str = ""
     agent_max_steps: int = 100
     agent_max_tokens: int = 100_000
     agent_max_seconds: float = 3600.0
@@ -50,6 +51,27 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
+    @property
+    def agent_api_token_map(self) -> dict[str, str]:
+        """Parse ``name:token`` pairs into an actor-to-token mapping.
+
+        A bare entry without ``:`` is attributed to the actor ``default``.
+        An empty setting yields an empty map, which callers treat as
+        "no credentials configured" rather than "no authentication needed".
+        """
+        tokens: dict[str, str] = {}
+        for entry in self.agent_api_token.split(","):
+            entry = entry.strip()
+            if not entry:
+                continue
+            actor, separator, token = entry.partition(":")
+            if not separator:
+                actor, token = "default", actor
+            actor, token = actor.strip(), token.strip()
+            if token:
+                tokens[actor or "default"] = token
+        return tokens
 
 
 @lru_cache

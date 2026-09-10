@@ -68,3 +68,4 @@ class AgentApprovalRead(BaseModel):
     status: str
     created_at: str
     decided_at: str | None = None
+    decided_by: str | None = None
