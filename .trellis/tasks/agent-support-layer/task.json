@@ -11,7 +11,7 @@
   "creator": "renbaiquan",
   "assignee": "renbaiquan",
   "createdAt": "2026-08-30",
-  "branch": "feature/agent-support-layer",
+  "branch": null,
   "base_branch": "main",
   "subtasks": [
     "provider-factory-and-fallback",
@@ -25,7 +25,7 @@
     "apps/api/app/kernel/model/",
     "apps/api/app/kernel/"
   ],
-  "notes": "Pending. Planned: provider factory/fallback, SSE streaming, MCP/plugins/skills, lifecycle hooks, OpenTelemetry, Prometheus, cost and audit metrics. See ../agent-progress.md.",
+  "notes": "Pending, not started; no branch yet. Planned: provider factory/fallback, SSE streaming, MCP/plugins/skills, lifecycle hooks, OpenTelemetry, Prometheus, cost and audit metrics. See ../agent-progress.md.",
   "meta": {
     "reference_doc": "agent-core-capabilities.md",
     "architecture_principles": ["SOLID", "Open Closed", "Provider Neutrality"],

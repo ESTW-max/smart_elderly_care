@@ -11,11 +11,11 @@
   "creator": "renbaiquan",
   "assignee": "renbaiquan",
   "createdAt": "2026-08-30",
-  "completedAt": "2026-08-30",
-  "branch": "feature/agent-skeleton-migration",
+  "completedAt": "2026-09-09",
+  "branch": "feature/agent-capability-layer",
   "base_branch": "main",
   "worktree_path": null,
-  "commit": null,
+  "commit": "4ac034c",
   "pr_url": null,
   "subtasks": [
     "orchestration-loop",
@@ -31,7 +31,7 @@
     "apps/api/app/kernel/",
     "apps/api/pyproject.toml"
   ],
-  "notes": "Completed: orchestration, tool invocation, local execution environment, DeepSeek integration, env configuration, security policies, persistence, context budgets, approvals, audit, and persistent shell. See agent-progress.md for current scope and remaining work.",
+  "notes": "Completed 2026-09-09 in 4ac034c: orchestration loop, tool invocation, local execution environment, DeepSeek provider, env-driven configuration, and integration tests. Landed on feature/agent-capability-layer together with the capability and constraint layers; feature/agent-skeleton-migration was never created. Persistence, context budgets, approvals, and audit belong to the capability/constraint tasks, not to this one. See ../agent-progress.md.",
   "meta": {
     "reference_doc": "agent-core-capabilities.md",
     "architecture_principles": ["SOLID", "Clean Architecture", "Dependency Inversion"],

@@ -11,7 +11,7 @@
   "creator": "renbaiquan",
   "assignee": "renbaiquan",
   "createdAt": "2026-08-30",
-  "branch": "feature/agent-constraints-layer",
+  "branch": "feature/agent-capability-layer",
   "base_branch": "main",
   "subtasks": [
     "sandbox-policy",
@@ -25,7 +25,7 @@
     "apps/api/app/kernel/environment/",
     "apps/api/app/kernel/tools/"
   ],
-  "notes": "In progress: command/file policies, approvals, credential filtering, resource limits, audit, and persistent shell are complete. Remaining: OS sandbox, network governance, credential broker, tenant/auth controls. See ../agent-progress.md.",
+  "notes": "In progress on feature/agent-capability-layer (feature/agent-constraints-layer was never created). Complete: command/file policies, approvals with task_id scoping, credential filtering, resource limits, audit, persistent shell, and named API Key auth on /agent/* with approval identity. Remaining: OS-native sandbox, network governance, credential broker, /agent/* rate limiting, and end-user auth with tenant isolation. See ../agent-progress.md.",
   "meta": {
     "reference_doc": "agent-core-capabilities.md",
     "architecture_principles": ["Least Privilege", "Fail Closed", "Defense in Depth"],
