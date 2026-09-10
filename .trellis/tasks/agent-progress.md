@@ -1,6 +1,6 @@
 # Agent 能力蒸馏进度
 
-更新时间：2026-09-09
+更新时间：2026-09-10
 
 ## 总览
 
@@ -37,18 +37,21 @@
 - Shell 输出、CPU、文件大小限制。
 - SQLite 安全审计事件和敏感字段脱敏。
 - 持久 Shell 进程组管理。
+- `/agent/*` 全量 API Key 鉴权（`X-Agent-Token`），常量时间比对，未配置 token 时失败关闭。
+- 具名 token（`name:token`）落 `agent_approvals.decided_by` 与审计事件 actor。
 
 ## 验证
 
-- 后端测试：`50 passed`（2026-09-09 实测）。
-- Ruff：`15 errors`。自动修复已应用 24 项；剩余需人工决策：
-  - `UP042` ×7：`class X(str, Enum)` 改 `StrEnum` 会改变 `str()` 输出，而这些枚举正在被 SQLite 持久化和 API 序列化，暂不改。
-  - `E501` ×5：仅换行，无风险。
-  - `B905` ×1：`tools/executor.py` 的 `zip()` 需先确认两序列长度恒等再加 `strict=`。
+- 后端测试：`58 passed`（2026-09-10 实测）。
+- Ruff：`All checks passed!`。此前 15 项已全部清理：
+  - `UP042` ×7：已改 `StrEnum`。改前确认全仓一律用 `.value` 取值（`persistence.py`、`routes/agent.py`），且当时库内仅 2 行测试残留数据，是迁移成本最低的时点。
+  - `E501` ×5：已换行。
+  - `B905` ×1：`tools/executor.py` 的 `zip()` 已加 `strict=True`；`asyncio.gather` 保证等长，注释已说明。
 - 测试仍有既有的 `datetime.utcnow()` 和 Starlette/httpx 弃用警告，不影响通过结果。
 - 真实 DeepSeek Agent 已成功执行 `pwd` 工具调用并返回最终回答。
 - 持久 Shell、审批、审计、凭据过滤相关测试均通过，此前记录的持久 Shell 回归已消除。
-- 孤立 `tool` 消息（无配对 `assistant.tool_calls`）当前行为是**保留并计入预算**，`_interaction_units` 的 docstring 仍写 "discarded"，与代码不符，待订正。
+- 孤立 `tool` 消息（无配对 `assistant.tool_calls`）行为确定为**保留并计入预算**，docstring 已订正并补充说明：OpenAI 兼容 Provider 会拒收此类消息，直接回放的调用方需自行清洗。经查 `Step` 的 `model_response` 与 `observations` 是同一对象的字段、在 `step_runner.run()` 内一次性组装后才落库，本代码库不会产出孤立消息，无需额外改动。
+- 服务端生成的 OpenAPI 与 `packages/api-contract/openapi.yaml` 已逐字段对拍一致。
 
 ## 未完成
 
@@ -65,7 +68,9 @@
 - 操作系统原生沙箱（macOS/Linux/容器）。
 - 网络域名白名单、逐请求网络治理和网络审计。
 - 凭据代理、短期凭据和系统钥匙串。
-- 面向真实用户的认证、租户隔离和审批身份审计。
+- 面向真实用户的认证与租户隔离（当前 API Key 只区分运维 actor，没有用户模型、登录流程和数据隔离）。
+- `/agent/*` 速率限制。
+- 审批记录绑定 `task_id` 的回归测试：`step.py:99` → `executor` → `SQLiteApprovalStore.approve()` 链路已接通，但无测试覆盖。
 
 ### 支撑层
 
@@ -77,6 +82,7 @@
 ## 当前配置
 
 - Agent 测试接口由 `AGENT_TEST_ENDPOINT_ENABLED` 控制，默认关闭。
+- `/agent/*` 鉴权由 `AGENT_API_TOKEN` 控制，格式 `name:token[,name:token]`。**接口启用但未配该值时全部返回 503**，避免"为调试打开一次"造成裸奔。
 - 工作目录由 `AGENT_WORKSPACE` 控制。
 - 文件写入由 `AGENT_FILE_WRITE_ENABLED` 控制，默认关闭。
 - Shell 命令由 `AGENT_ALLOWED_COMMANDS` 控制。
@@ -85,11 +91,11 @@
 
 ## 下一步顺序
 
-1. 订正 `_interaction_units` docstring，使其与"保留孤立 tool 消息"的实际行为一致。
-2. 将审批记录绑定 `task_id`，完善暂停后恢复的精确关联。
-3. 增加 Agent API 认证和审批身份审计。
-4. 增加网络域名白名单与网络访问策略。
-5. 迁移正式 SQLAlchemy Agent 状态模型。
-6. 实现 SSE 流式事件。
-7. 实现上下文自动摘要、多 Agent、MCP 和可观测性。
-8. 在明确运行平台后接入原生沙箱；应用层过滤不能替代 OS 隔离。
+1. 为审批记录绑定 `task_id` 补回归测试（链路已通，缺覆盖）。
+2. 增加 `/agent/*` 速率限制。
+3. 增加网络域名白名单与网络访问策略。
+4. 迁移正式 SQLAlchemy Agent 状态模型。
+5. 实现 SSE 流式事件。
+6. 实现上下文自动摘要、多 Agent、MCP 和可观测性。
+7. 在明确运行平台后接入原生沙箱；应用层过滤不能替代 OS 隔离。
+8. 若要面向真实用户开放，再引入用户模型与登录流程；当前 `JWT_SECRET` 仍是未使用的死配置。
