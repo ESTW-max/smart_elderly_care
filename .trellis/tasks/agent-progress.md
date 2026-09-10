@@ -40,10 +40,11 @@
 - `/agent/*` 全量 API Key 鉴权（`X-Agent-Token`），常量时间比对，未配置 token 时失败关闭。
 - 具名 token（`name:token`）落 `agent_approvals.decided_by` 与审计事件 actor。
 - 审批记录按 `task_id` 作用域隔离：A 任务的审批不能被 B 任务复用。
+- `/agent/*` 进程内滑动窗口限流：认证失败按客户端地址计、成功调用按 actor 计，超限返回 429 + `Retry-After`。限流审计每个 key 每窗口只写一行，避免"每拒一次写一次盘"变成放大攻击面。
 
 ## 验证
 
-- 后端测试：`59 passed`（2026-09-10 实测）。
+- 后端测试：`70 passed`（2026-09-10 实测）。
 - Ruff：`All checks passed!`。此前 15 项已全部清理：
   - `UP042` ×7：已改 `StrEnum`。改前确认全仓一律用 `.value` 取值（`persistence.py`、`routes/agent.py`），且当时库内仅 2 行测试残留数据，是迁移成本最低的时点。
   - `E501` ×5：已换行。
@@ -54,6 +55,7 @@
 - 孤立 `tool` 消息（无配对 `assistant.tool_calls`）行为确定为**保留并计入预算**，docstring 已订正并补充说明：OpenAI 兼容 Provider 会拒收此类消息，直接回放的调用方需自行清洗。经查 `Step` 的 `model_response` 与 `observations` 是同一对象的字段、在 `step_runner.run()` 内一次性组装后才落库，本代码库不会产出孤立消息，无需额外改动。
 - 服务端生成的 OpenAPI 与 `packages/api-contract/openapi.yaml` 已逐字段对拍一致。
 - 审批 `task_id` 绑定已有回归测试。该用例做过变异验证：把 `approve()` 的 `task_id IS ?` 条件去掉后用例确实失败，不是空测。
+- 限流的过期键清扫同样做过变异验证：去掉清扫后用例失败，确认键表不会随伪造来源地址无限增长。
 
 ## 未完成
 
@@ -71,7 +73,7 @@
 - 网络域名白名单、逐请求网络治理和网络审计。
 - 凭据代理、短期凭据和系统钥匙串。
 - 面向真实用户的认证与租户隔离（当前 API Key 只区分运维 actor，没有用户模型、登录流程和数据隔离）。
-- `/agent/*` 速率限制。
+- 跨进程限流：当前配额是进程内状态，`uvicorn --workers N` 下每个 worker 各算各的，实际额度会翻 N 倍。单 worker 部署无此问题。
 
 ### 支撑层
 
@@ -84,6 +86,7 @@
 
 - Agent 测试接口由 `AGENT_TEST_ENDPOINT_ENABLED` 控制，默认关闭。
 - `/agent/*` 鉴权由 `AGENT_API_TOKEN` 控制，格式 `name:token[,name:token]`。**接口启用但未配该值时全部返回 503**，避免"为调试打开一次"造成裸奔。
+- `/agent/*` 限流由 `AGENT_RATE_LIMIT_WINDOW_SECONDS`（默认 60）、`AGENT_RATE_LIMIT_AUTH_FAILURES`（默认 10）、`AGENT_RATE_LIMIT_REQUESTS`（默认 30）控制，任一置 0 即关闭该项配额。
 - 工作目录由 `AGENT_WORKSPACE` 控制。
 - 文件写入由 `AGENT_FILE_WRITE_ENABLED` 控制，默认关闭。
 - Shell 命令由 `AGENT_ALLOWED_COMMANDS` 控制。
@@ -92,10 +95,9 @@
 
 ## 下一步顺序
 
-1. 增加 `/agent/*` 速率限制。
-2. 增加网络域名白名单与网络访问策略。
-3. 迁移正式 SQLAlchemy Agent 状态模型。
-4. 实现 SSE 流式事件。
-5. 实现上下文自动摘要、多 Agent、MCP 和可观测性。
-6. 在明确运行平台后接入原生沙箱；应用层过滤不能替代 OS 隔离。
-7. 若要面向真实用户开放，再引入用户模型与登录流程；当前 `JWT_SECRET` 仍是未使用的死配置。
+1. 增加网络域名白名单与网络访问策略。
+2. 迁移正式 SQLAlchemy Agent 状态模型。
+3. 实现 SSE 流式事件。
+4. 实现上下文自动摘要、多 Agent、MCP 和可观测性。
+5. 在明确运行平台后接入原生沙箱；应用层过滤不能替代 OS 隔离。
+6. 若要面向真实用户开放，再引入用户模型与登录流程；当前 `JWT_SECRET` 仍是未使用的死配置。

@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     agent_workspace: str = "."
     agent_test_endpoint_enabled: bool = False
     agent_api_token: str = ""
+    agent_rate_limit_window_seconds: float = 60.0
+    agent_rate_limit_auth_failures: int = 10
+    agent_rate_limit_requests: int = 30
     agent_max_steps: int = 100
     agent_max_tokens: int = 100_000
     agent_max_seconds: float = 3600.0

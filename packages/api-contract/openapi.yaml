@@ -72,6 +72,8 @@ paths:
           $ref: "#/components/responses/AgentUnauthorized"
         "404":
           $ref: "#/components/responses/AgentDisabled"
+        "429":
+          $ref: "#/components/responses/AgentRateLimited"
         "503":
           $ref: "#/components/responses/AgentUnavailable"
   /agent/approvals/{approval_id}/decision:
@@ -103,6 +105,8 @@ paths:
           $ref: "#/components/responses/AgentUnauthorized"
         "404":
           description: Pending approval not found
+        "429":
+          $ref: "#/components/responses/AgentRateLimited"
         "503":
           $ref: "#/components/responses/AgentUnavailable"
   /agent/tasks/{task_id}:
@@ -128,6 +132,8 @@ paths:
           $ref: "#/components/responses/AgentUnauthorized"
         "404":
           description: Agent task not found
+        "429":
+          $ref: "#/components/responses/AgentRateLimited"
         "503":
           $ref: "#/components/responses/AgentUnavailable"
   /agent/tasks/{task_id}/resume:
@@ -159,6 +165,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorDetail"
+        "429":
+          $ref: "#/components/responses/AgentRateLimited"
         "503":
           $ref: "#/components/responses/AgentUnavailable"
   /agent/test:
@@ -190,6 +198,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HTTPValidationError"
+        "429":
+          $ref: "#/components/responses/AgentRateLimited"
         "503":
           $ref: "#/components/responses/AgentUnavailable"
   /items/{item_id}:
@@ -266,6 +276,21 @@ components:
             $ref: "#/components/schemas/ErrorDetail"
     AgentDisabled:
       description: Agent endpoints are disabled
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorDetail"
+    AgentRateLimited:
+      description: >
+        Per-window quota exceeded. Auth failures are counted per client
+        address and successful calls per token name, so a burst of bad
+        tokens from one host cannot lock out other callers.
+      headers:
+        Retry-After:
+          description: Seconds until the quota frees up
+          schema:
+            type: integer
+            minimum: 1
       content:
         application/json:
           schema:

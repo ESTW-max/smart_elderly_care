@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import models  # noqa: F401  # register SQLAlchemy models before create_all
+from app.api.rate_limit import AgentRateLimiters, SlidingWindowLimiter
 from app.api.routes import agent, health, items
 from app.core.config import Settings, get_settings
 from app.db.session import create_engine, create_session_factory, init_db
@@ -30,6 +31,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.settings = app_settings
     app.state.session_factory = session_factory
+    # Held on the app, not module state, so each create_app() gets clean quotas.
+    app.state.agent_rate_limiters = AgentRateLimiters(
+        auth_failures=SlidingWindowLimiter(
+            app_settings.agent_rate_limit_auth_failures,
+            app_settings.agent_rate_limit_window_seconds,
+        ),
+        requests=SlidingWindowLimiter(
+            app_settings.agent_rate_limit_requests,
+            app_settings.agent_rate_limit_window_seconds,
+        ),
+    )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=app_settings.cors_origin_list,
