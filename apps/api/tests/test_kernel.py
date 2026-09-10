@@ -692,6 +692,48 @@ async def test_high_risk_tool_requires_one_time_approval(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_approval_is_scoped_to_its_task(tmp_path):
+    """An approval granted for one task must not unlock the same action elsewhere.
+
+    ToolExecutor forwards task_id from StepRunner (loop/step.py), and
+    SQLiteApprovalStore matches on it, so approving a dangerous call inside
+    one task cannot silently authorise an identical call in another.
+    """
+    from app.kernel.approval import ApprovalStatus, SQLiteApprovalStore
+    from app.kernel.interfaces.tool import ToolRisk
+
+    class HighRiskTool(ITool):
+        @property
+        def schema(self) -> ToolSchema:
+            return ToolSchema(name="danger", description="danger", risk=ToolRisk.HIGH)
+
+        async def execute(self, arguments: dict[str, Any]) -> ToolResult:
+            return ToolResult(success=True, output="executed")
+
+    registry = ToolRegistry()
+    registry.register(HighRiskTool())
+    approval_store = SQLiteApprovalStore(tmp_path / "agent-state.db")
+    executor = ToolExecutor(registry, approval=approval_store)
+
+    await executor.execute_many([("call-1", "danger", {})], task_id="task-a")
+    pending = approval_store.list(ApprovalStatus.PENDING, task_id="task-a")
+    assert len(pending) == 1
+    assert pending[0].task_id == "task-a"
+    approval_store.decide(pending[0].id, approved=True)
+
+    # The identical action under a different task stays blocked and raises its
+    # own pending request rather than consuming task-a's approval.
+    other = await executor.execute_many([("call-2", "danger", {})], task_id="task-b")
+    assert other[0][1].success is False
+    assert approval_store.list(ApprovalStatus.PENDING, task_id="task-b")
+    assert approval_store.list(ApprovalStatus.APPROVED, task_id="task-a")
+
+    # The original task can still spend its own approval.
+    same = await executor.execute_many([("call-3", "danger", {})], task_id="task-a")
+    assert same[0][1].success is True
+
+
+@pytest.mark.asyncio
 async def test_environment_filters_provider_credentials(environment, monkeypatch):
     monkeypatch.setenv("DEEPSEEK_API_KEY", "must-not-leak")
     await environment.start()
