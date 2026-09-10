@@ -8,14 +8,14 @@ import sqlite3
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
 from app.kernel.interfaces.tool import ITool, IToolApproval
 
 
-class ApprovalStatus(str, Enum):
+class ApprovalStatus(StrEnum):
     """Lifecycle state of an approval request."""
 
     PENDING = "pending"

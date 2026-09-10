@@ -68,7 +68,9 @@ class ToolExecutor(IToolExecutor):
         raw = await asyncio.gather(*tasks, return_exceptions=True)
 
         results: list[tuple[str, ToolResult]] = []
-        for (call_id, _, _), outcome in zip(calls, raw):
+        # gather preserves order and returns one outcome per task, so the two
+        # sequences are equal-length by construction; strict= locks that in.
+        for (call_id, _, _), outcome in zip(calls, raw, strict=True):
             if isinstance(outcome, BaseException):
                 results.append((
                     call_id,

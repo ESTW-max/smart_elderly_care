@@ -5,10 +5,10 @@ from __future__ import annotations
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 
-class AccessDecision(str, Enum):
+class AccessDecision(StrEnum):
     """Policy decision for an Agent action."""
 
     ALLOW = "allow"

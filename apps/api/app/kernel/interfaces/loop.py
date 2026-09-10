@@ -11,7 +11,7 @@ from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 # ---------------------------------------------------------------------------
@@ -19,7 +19,7 @@ from typing import Any
 # ---------------------------------------------------------------------------
 
 
-class TaskStatus(str, Enum):
+class TaskStatus(StrEnum):
     PENDING = "pending"
     RUNNING = "running"
     PAUSED = "paused"
@@ -28,14 +28,14 @@ class TaskStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
-class StepStatus(str, Enum):
+class StepStatus(StrEnum):
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
 
 
-class TerminationReason(str, Enum):
+class TerminationReason(StrEnum):
     NO_TOOL_CALLS = "no_tool_calls"       # Model output contained no tool calls
     GOAL_REACHED = "goal_reached"          # Explicit completion signal
     BUDGET_EXHAUSTED = "budget_exhausted"  # Token / step / time limit hit
